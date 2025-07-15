@@ -19,11 +19,11 @@
  
  1. 克隆仓库到本地：
 
-git clone https://www.github.com/RuiNian886/ruinian886.github.io/
+git clone https://github.com/RuiNian886/RuiNian-BT-Tool
 
  2. 进入项目目录：
  
-cd ruinian886.github.io/ && chmod 777 瑞年美化.sh && ./瑞年美化.sh
+cd RuiNian-BT-Tool/ && chmod 777 瑞年美化.sh && ./瑞年美化.sh
 
  ---
  
