@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub云端/本地混合执行器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4285f4;
+            --secondary: #34a853;
+            --danger: #ea4335;
+            --warning: #fbbc05;
+            --dark: #202124;
+            --light: #f8f9fa;
+            --gray: #dadce0;
+            --code-bg: #1e1e1e;
+            --cloud-bg: #e3f2fd;
+            --local-bg: #e8f5e9;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #3a7bd5, #00d2ff);
+            color: white;
+            padding: 35px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 12px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.92;
+            max-width: 800px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+        
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 25px auto;
+        }
+        
+        .mode-btn {
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 500;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            background: white;
+            color: var(--dark);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .mode-btn.active {
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        }
+        
+        .mode-btn.cloud {
+            background: var(--primary);
+        }
+        
+        .mode-btn.local {
+            background: var(--secondary);
+        }
+        
+        .mode-btn:hover:not(.active) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        }
+        
+        .content {
+            display: flex;
+            padding: 30px;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+        
+        .input-section, .output-section {
+            flex: 1;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+        }
+        
+        .input-section {
+            background: var(--cloud-bg);
+        }
+        
+        .section-title {
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(66, 133, 244, 0.15);
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #5f6368;
+            font-size: 1.05rem;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid var(--gray);
+            border-radius: 8px;
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.15);
+        }
+        
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 16px 28px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.25);
+        }
+        
+        .btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(66, 133, 244, 0.35);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(66, 133, 244, 0.25);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+            box-shadow: 0 4px 12px rgba(52, 168, 83, 0.25);
+        }
+        
+        .btn-secondary:hover {
+            background: #2a8c4f;
+            box-shadow: 0 6px 16px rgba(52, 168, 83, 0.35);
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+            box-shadow: 0 4px 12px rgba(251, 188, 5, 0.25);
+        }
+        
+        .btn-warning:hover {
+            background: #e6a900;
+            box-shadow: 0 6px 16px rgba(251, 188, 5, 0.35);
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            box-shadow: 0 4px 12px rgba(234, 67, 53, 0.25);
+        }
+        
+        .btn-danger:hover {
+            background: #d32f2f;
+            box-shadow: 0 6px 16px rgba(234, 67, 53, 0.35);
+        }
+                
+        .btn-group {
+            display: flex;
+            gap: 18px;
+            margin-top: 25px;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+        
+        .output {
+            background-color: var(--code-bg);
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 250px;
+            max-height: 450px;
+            overflow-y: auto;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            background-color: #e8f0fe;
+            border-left: 4px solid var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.05rem;
+        }
+        
+        .status.success {
+            background-color: #e6f4ea;
+            border-left-color: var(--secondary);
+        }
+        
+        .status.error {
+            background-color: #fce8e6;
+            border-left-color: var(--danger);
+        }
+        
+        .status.warning {
+            background-color: #fef7e0;
+            border-left-color: var(--warning);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .security-info {
+            background: linear-gradient(to right, #f8f9fa, #eef2f7);
+            border: 1px solid var(--gray);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        .security-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--secondary);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .security-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .point {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .point:hover {
+            transform: translateY(-5px);
+        }
+        
+        .point h3 {
+            color: var(--primary);
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .point p {
+            color: #5f6368;
+            line-height: 1.6;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #5f6368;
+            font-size: 0.95rem;
+            border-top: 1px solid var(--gray);
+            background: #f8f9fa;
+        }
+        
+        .examples {
+            background: #f1f8ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .examples h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .example-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .example-item {
+            background: white;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border: 1px solid #d1e0ff;
+            font-family: monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .example-item:hover {
+            background: #e6f0ff;
+            border-color: var(--primary);
+        }
+        
+        .execution-info {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .info-item {
+            background: rgba(66, 133, 244, 0.1);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .usage-guide {
+            background: #fff8e1;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 30px;
+        }
+        
+        .guide-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--warning);
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+        
+        .steps {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .step {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        
+        .step-number {
+            background: var(--warning);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: bold;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+        
+        .step-desc {
+            color: #5f6368;
+        }
+        
+        .comparison {
+            display: flex;
+            gap: 20px;
+            margin: 30px;
+        }
+        
+        .comparison-box {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+        
+        .cloud-box {
+            border-top: 4px solid var(--primary);
+        }
+        
+        .local-box {
+            border-top: 4px solid var(--secondary);
+        }
+        
+        .comparison-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .comparison-list {
+            list-style-type: none;
+        }
+        
+        .comparison-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .comparison-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .recommended {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 500;
+            color: var(--secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GitHub 云端/本地混合执行器</h1>
+            <p class="subtitle">灵活选择在云端安全执行或在本地直接运行 GitHub 托管的预编译二进制文件</p>
+        </header>
+        
+        <div class="mode-selector">
+            <div class="mode-btn cloud active" data-mode="cloud">
+                <i>☁️</i> 云端安全执行
+            </div>
+            <div class="mode-btn local" data-mode="local">
+                <i>💻</i> 本地直接运行
+            </div>
+        </div>
+        
+        <div class="comparison">
+            <div class="comparison-box cloud-box">
+                <h3 class="comparison-title"><i>☁️</i> 云端执行</h3>
+                <ul class="comparison-list">
+                    <li><i>✅</i> 最高级别的安全性</li>
+                    <li><i>✅</i> 不消耗本地资源</li>
+                    <li><i>✅</i> 执行环境隔离</li>
+                    <li><i>✅</i> 无需担心系统兼容性</li>
+                    <li><i>⚠️</i> 需要网络连接</li>
+                    <li><i>⚠️</i> 无法访问本地文件系统</li>
+                </ul>
+                <div class="recommended">推荐用于：未知来源程序、敏感数据处理</div>
+            </div>
+            
+            <div class="comparison-box local-box">
+                <h3 class="comparison-title"><i>💻</i> 本地执行</h3>
+                <ul class="comparison-list">
+                    <li><i>✅</i> 完全离线运行</li>
+                    <li><i>✅</i> 访问本地文件系统</li>
+                    <li><i>✅</i> 无执行时间限制</li>
+                    <li><i>✅</i> 更高性能</li>
+                    <li><i>⚠️</i> 需信任程序来源</li>
+                    <li><i>⚠️</i> 消耗本地资源</li>
+                </ul>
+                <div class="recommended">推荐用于：可信来源程序、需要访问本地文件</div>
+            </div>
+        </div>
+        
+        <div class="usage-guide">
+            <div class="guide-title">
+                <i>📝</i> 使用指南
+            </div>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">获取 GitHub 二进制文件链接</div>
+                        <div class="step-desc">前往 GitHub Releases 页面，复制预编译二进制文件的下载链接</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">选择执行模式</div>
+                        <div class="step-desc">根据需求选择云端安全执行或本地直接运行</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">配置参数并执行</div>
+                        <div class="step-desc">设置命令行参数和输入数据，点击执行按钮</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">查看结果</div>
+                        <div class="step-desc">在输出区域查看程序执行结果和性能指标</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="input-section">
+                <h2 class="section-title">
+                    <i>📥</i> 输入设置
+                </h2>
+                
+                <div class="form-group">
+                    <label for="github-url">GitHub 二进制文件 URL:</label>
+                    <input type="url" id="github-url" placeholder="https://github.com/用户名/仓库/releases/download/版本/程序名">
+                    <p style="margin-top: 8px; color: #5f6368; font-size: 0.95rem;">提示: 必须是 GitHub Releases 中的二进制文件</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="arguments">命令行参数 (可选):</label>
+                    <input type="text" id="arguments" placeholder="arg1 arg2">
+                </div>
+                
+                <div class="form-group">
+                    <label for="stdin">标准输入 (可选):</label>
+                    <textarea id="stdin" placeholder="输入程序需要读取的内容..."></textarea>
+                </div>
+                
+                <div class="btn-group">
+                    <button id="execute-btn" class="btn">
+                        <i>🚀</i> 执行程序
+                    </button>
+                    <button id="download-btn" class="btn btn-secondary">
+                        <i>💾</i> 仅下载程序
+                    </button>
+                </div>
+                
+                <div class="status" id="status">
+                    <i>ℹ️</i> 准备就绪，输入 GitHub 二进制文件链接开始执行
+                </div>
+                
+                <div class="examples">
+                    <h3>示例链接:</h3>
+                    <div class="example-list">
+                        <div class="example-item" data-url="https://github.com/example/repo/releases/download/v1.0/hello-world">hello-world 程序</div>
+                        <div class="example-item" data-url="https://github.com/example/repo/releases/download/v1.0/image-processor">image-processor 程序</div>
+                        <div class="example-item" data-url="https://github.com/example/repo/releases/download/v1.0/data-calculator">data-calculator 程序</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="output-section">
+                <h2 class="section-title">
+                    <i>📤</i> 执行结果
+                </h2>
+                
+                <div class="output" id="output">
+// 执行结果将显示在这里
+// 输出包括标准输出、标准错误和返回值
+                </div>
+                                <div class="execution-info">
+                    <div class="info-item">
+                        <i>⏱️</i> <span id="exec-time">-</span>
+                    </div>
+                    <div class="info-item">
+                        <i>📊</i> <span id="mem-usage">-</span>
+                    </div>
+                    <div class="info-item">
+                        <i>↩️</i> <span id="exit-code">-</span>
+                    </div>
+                    <div class="info-item">
+                        <i>📍</i> <span id="exec-location">-</span>
+                    </div>
+                </div>
+                
+                <div class="status" id="result-status">
+                    <i>⏱️</i> 尚未执行任何程序
+                </div>
+            </div>
+        </div>
+        
+        <div class="security-info">
+            <h2 class="security-title">
+                <i>🔒</i> 安全建议
+            </h2>
+            <div class="security-points">
+                <div class="point">
+                    <h3><i>🔍</i> 验证来源</h3>
+                    <p>仅执行来自可信来源的GitHub仓库的程序</p>
+                </div>
+                <div class="point">
+                    <h3><i>📛</i> 检查签名</h3>
+                    <p>优先使用有数字签名的二进制文件</p>
+                </div>
+                <div class="point">
+                    <h3><i>📦</i> 使用沙箱</h3>
+                    <p>本地执行时考虑使用沙箱环境</p>
+                </div>
+                <div class="point">
+                    <h3><i>⚠️</i> 未知程序</h3>
+                    <p>对未知程序优先使用云端执行模式</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 GitHub混合执行器 | 安全执行 GitHub 托管的预编译程序 | 云端安全 ☁️ | 本地灵活 💻</p>
+        </footer>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const executeBtn = document.getElementById('execute-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const githubUrl = document.getElementById('github-url');
+            const argumentsInput = document.getElementById('arguments');
+            const stdinInput = document.getElementById('stdin');
+            const output = document.getElementById('output');
+            const status = document.getElementById('status');
+            const resultStatus = document.getElementById('result-status');
+            const execTimeEl = document.getElementById('exec-time');
+            const memUsageEl = document.getElementById('mem-usage');
+            const exitCodeEl = document.getElementById('exit-code');
+            const execLocationEl = document.getElementById('exec-location');
+            const exampleItems = document.querySelectorAll('.example-item');
+            const modeButtons = document.querySelectorAll('.mode-btn');
+            
+            let currentMode = 'cloud';
+            
+            // 设置执行模式
+            modeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    modeButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    currentMode = this.getAttribute('data-mode');
+                    
+                    if (currentMode === 'cloud') {
+                        executeBtn.innerHTML = '<i>☁️</i> 云端执行';
+                        status.innerHTML = '<i>ℹ️</i> 云端模式：程序将在安全沙箱中远程执行';
+                        document.querySelector('.input-section').style.background = 'var(--cloud-bg)';
+                    } else {
+                        executeBtn.innerHTML = '<i>💻</i> 本地执行';
+                        status.innerHTML = '<i>⚠️</i> 本地模式：程序将在您的设备上直接运行';
+                        document.querySelector('.input-section').style.background = 'var(--local-bg)';
+                    }
+                });
+            });
+            
+            // 示例链接点击事件
+            exampleItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    githubUrl.value = this.getAttribute('data-url');
+                    showStatus('已选择示例程序', 'success');
+                });
+            });
+            
+            // 执行按钮点击事件
+            executeBtn.addEventListener('click', async function() {
+                const url = githubUrl.value.trim();
+                
+                if (!url) {
+                    showStatus('请提供有效的 GitHub 二进制文件 URL', 'error');
+                    return;
+                }
+                
+                if (!url.includes('github.com') || !url.includes('/releases/download/')) {
+                    showStatus('URL 必须是 GitHub Releases 下载链接', 'error');
+                    return;
+                }
+                
+                try {
+                    if (currentMode === 'cloud') {
+                        showStatus('正在云端安全执行...', 'loading');
+                        execLocationEl.textContent = '云端沙箱环境';
+                        const result = await executeBinaryInCloud(url, argumentsInput.value, stdinInput.value);
+                        displayResult(result);
+                    } else {
+                        showStatus('正在本地执行程序...', 'loading');
+                        execLocationEl.textContent = '本地设备';
+                        const result = await executeBinaryLocally(url, argumentsInput.value, stdinInput.value);
+                        displayResult(result);
+                    }
+                } catch (error) {
+                    output.textContent = `执行错误:\n${error.message}`;
+                    resultStatus.innerHTML = `<i>❌</i> 执行失败: ${error.message}`;
+                    resultStatus.className = 'status error';
+                    showStatus(`错误: ${error.message}`, 'error');
+                    
+                    // 重置执行信息
+                    execTimeEl.textContent = '-';
+                    memUsageEl.textContent = '-';
+                    exitCodeEl.textContent = '-';
+                }
+            });
+            
+            // 下载按钮点击事件
+            downloadBtn.addEventListener('click', function() {
+                const url = githubUrl.value.trim();
+                
+                if (!url) {
+                    showStatus('请提供有效的 GitHub 二进制文件 URL', 'error');
+                    return;
+                }
+                
+                showStatus('正在下载程序...', 'loading');
+                
+                // 模拟下载
+                setTimeout(() => {
+                    const filename = url.split('/').pop();
+                    showStatus(`已下载: ${filename}`, 'success');
+                    resultStatus.innerHTML = `<i>💾</i> 程序已下载，未执行`;
+                    resultStatus.className = 'status';
+                    
+                    execTimeEl.textContent = '-';
+                    memUsageEl.textContent = '-';
+                    exitCodeEl.textContent = '-';
+                    execLocationEl.textContent = '下载到本地';
+                    
+                    output.textContent = `程序已下载但未执行\n文件名: ${filename}\n\n您可以在本地手动运行此程序`;
+                }, 1500);
+            });
+            
+            // 显示结果
+            function displayResult(result) {
+                output.textContent = result.output;
+                execTimeEl.textContent = `${result.executionTime}ms`;
+                memUsageEl.textContent = `${result.memoryUsage}MB`;
+                exitCodeEl.textContent = result.exitCode;
+                
+                resultStatus.innerHTML = `<i>✅</i> 执行完成 | 返回值: ${result.exitCode} | 用时: ${result.executionTime}ms | 内存: ${result.memoryUsage}MB`;
+                resultStatus.className = 'status success';
+                
+                showStatus('执行成功!', 'success');
+            }
+            
+            // 显示状态信息
+            function showStatus(message, type = 'info') {
+                let icon = 'ℹ️';
+                if (type === 'loading') {
+                    icon = '<div class="loading"></div>';
+                } else if (type === 'success') {
+                    icon = '✅';
+                } else if (type === 'error') {
+                    icon = '❌';
+                } else if (type === 'warning') {
+                    icon = '⚠️';
+                }
+                
+                status.innerHTML = `${icon} ${message}`;
+                status.className = 'status';
+                if (type !== 'info') {
+                    status.classList.add(type);
+                }
+            }
+            
+            // 模拟云函数执行二进制文件
+            async function executeBinaryInCloud(githubUrl, args, stdin) {
+                // 模拟网络延迟和下载
+                await new Promise(resolve => setTimeout(resolve, 1800));
+                
+                // 模拟不同程序的执行结果
+                if (githubUrl.includes('hello-world')) {
+                    return {
+                        output: "Hello from Cloud Binary Execution!\nThis program was securely executed in a cloud environment.\n\nSystem Info:\n- Platform: Linux x86_64\n- Sandbox: Docker Container\n- Isolation: Full",
+                        exitCode: 0,
+                        executionTime: 125,
+                        memoryUsage: 12.3
+                    };
+                } else if (githubUrl.includes('image-processor')) {
+                    return {
+                        output: "Image Processing Complete!\n\n- Loaded image: 1920x1080 (2.1MB)\n- Applied filters: Gaussian Blur, Contrast Adjustment\n- Output size: 960x540 (0.8MB)\n- Processing time: 2.4 seconds",
+                        exitCode: 0,
+                        executionTime: 2400,
+                        memoryUsage: 186.7
+                    };
+                } else if (githubUrl.includes('data-calculator')) {
+                    const data = `Processing input data:\n${stdin || "No input provided"}\n\nResults:\n`;
+                    const calculations = [
+                        "Sum: 2846.32",
+                        "Average: 142.32",
+                        "Median: 138.75",
+                        "Standard Deviation: 45.67",
+                        "Min: 23.4 | Max: 298.1"
+                    ].join('\n');
+                    
+                    return {
+                        output: data + calculations,
+                        exitCode: 0,
+                        executionTime: 320,
+                        memoryUsage: 45.2
+                    };
+                } else {
+                    // 通用模拟
+                    return {
+                        output: `[云端执行] Binary Execution Report\n\nURL: ${githubUrl}\nArguments: ${args}\n\nOutput:\nSuccessfully executed binary in secure cloud environment\n- Sandbox: gVisor\n- CPU: 1 core\n- Memory: 512MB limit\n- Duration: 0.45s\n\nProgram completed successfully.`,
+                        exitCode: 0,
+                        executionTime: 450,
+                        memoryUsage: 78.9
+                    };
+                }
+            }
+            
+            // 模拟本地执行二进制文件
+            async function executeBinaryLocally(githubUrl, args, stdin) {
+                // 模拟下载和本地执行
+                await new Promise(resolve => setTimeout(resolve, 1200));
+                
+                // 模拟不同程序的执行结果
+                if (githubUrl.includes('hello-world')) {
+                    return {
+                        output: "Hello from Local Execution!\nThis program is running directly on your device.\n\nSystem Info:\n- Platform: " + navigator.platform + "\n- User Agent: " + navigator.userAgent,
+                        exitCode: 0,
+                        executionTime: 42,
+                        memoryUsage: 8.7
+                    };
+                } else if (githubUrl.includes('image-processor')) {
+                    return {
+                        output: "Local Image Processing Complete!\n\n- Used local GPU acceleration\n- Processing time: 1.2 seconds\n- Output saved to Downloads folder",
+                        exitCode: 0,
+                        executionTime: 1200,
+                        memoryUsage: 320.5
+                    };
+                } else if (githubUrl.includes('data-calculator')) {
+                    const data = `Processing LOCAL input data:\n${stdin || "No input provided"}\n\nResults:\n`;
+                    const calculations = [
+                        "Sum: 3842.15",
+                        "Average: 192.11",
+                        "Median: 187.25",
+                        "Standard Deviation: 52.34",
+                        "Min: 45.2 | Max: 345.7"
+                    ].join('\n');
+                    
+                    return {
+                        output: data + calculations,
+                        exitCode: 0,
+                        executionTime: 120,
+                        memoryUsage: 32.8
+                    };
+                } else {
+                    // 通用模拟
+                    return {
+                        output: `[本地执行] Binary Execution Report\n\nURL: ${githubUrl}\nArguments: ${args}\n\nOutput:\nSuccessfully executed binary on your local device\n- Performance: Native speed\n- File Access: Full access to local filesystem\n- Duration: 0.12s\n\nProgram completed successfully.`,
+                        exitCode: 0,
+                        executionTime: 120,
+                        memoryUsage: 24.3
+                    };
+                }
+            }
+        });
+    </script>
+</body>
+</html>
